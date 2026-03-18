@@ -116,14 +116,19 @@ onUnmounted(() => {
 
           <section class="panel">
             <h2 class="panel-title">Cherry</h2>
+            <img class="carouselImg" src="/images/Cherry.png" alt=""/>
           </section>
 
           <section class="panel">
             <h2 class="panel-title">Walnut</h2>
+            <img class="carouselImg" src="/images/Walnut.png" alt=""/>
+
           </section>
 
           <section class="panel">
             <h2 class="panel-title">Mint</h2>
+            <img class="carouselImg" src="/images/Mint.png" alt=""/>
+
           </section>
 
         </div>
@@ -139,6 +144,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+img.carouselImg {
+  max-width: 25rem;
+  position: absolute;
+}
 /* ── Horizontal scroll mechanics ────────────────────────────────────────── */
 .sticky-wrapper {
   height: 300vh;       /* provides 200vh of scroll range beyond the 100vh panel */
@@ -177,9 +186,10 @@ onUnmounted(() => {
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
 .panel-title {
-  font-size: clamp(2rem, 6vw, 4rem);
+  //font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 700;
   letter-spacing: 0.05em;
   color: rgba(0, 0, 0, 0.55);
+  font-size: 18dvw;
 }
 </style>
