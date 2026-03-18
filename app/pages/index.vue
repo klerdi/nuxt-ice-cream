@@ -148,6 +148,17 @@ img.carouselImg {
   max-width: 25rem;
   position: absolute;
 }
+
+@media (max-width: 768px) {
+  img.carouselImg {
+    max-width: 20rem !important;
+  }
+  .panel-title {
+    margin-top: 36rem;
+    letter-spacing: 0.05em !important;
+
+  }
+}
 /* ── Horizontal scroll mechanics ────────────────────────────────────────── */
 .sticky-wrapper {
   height: 300vh;       /* provides 200vh of scroll range beyond the 100vh panel */
@@ -188,8 +199,10 @@ img.carouselImg {
 .panel-title {
   //font-size: clamp(2rem, 6vw, 4rem);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 2rem;
   color: rgba(0, 0, 0, 0.55);
-  font-size: 18dvw;
+  font-size: 25dvw;
+  margin-top: 20rem;
+
 }
 </style>
