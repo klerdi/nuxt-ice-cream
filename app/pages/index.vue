@@ -3,29 +3,111 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 const stickyWrapper   = ref<HTMLElement | null>(null)
 const horizontalTrack = ref<HTMLElement | null>(null)
+const bgColor         = ref('#ffb7c5') // starts at cherry
+
+// Panel colours as RGB components for easy interpolation
+const panelColors = [
+  { r: 255, g: 183, b: 197 }, // cherry  #ffb7c5
+  { r: 222, g: 201, b: 168 }, // walnut  #dec9a8
+  { r: 181, g: 234, b: 215 }, // mint    #b5ead7
+]
+
+const lerpColor = (a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }, t: number) => {
+  const r = Math.round(a.r + (b.r - a.r) * t)
+  const g = Math.round(a.g + (b.g - a.g) * t)
+  const bv = Math.round(a.b + (b.b - a.b) * t)
+  return `rgb(${r}, ${g}, ${bv})`
+}
 
 const updateTranslation = () => {
   if (!stickyWrapper.value || !horizontalTrack.value) return
 
-  // How far from the top of the document this wrapper starts
   const wrapperTop = stickyWrapper.value.offsetTop
-
-  // 300vh wrapper – sticky element (100vh) = 200vh of scrollable space for 2 extra panels
-  const maxScroll = window.innerHeight * 2
+  const maxScroll  = window.innerHeight * 2
 
   const scrollInWrapper = window.scrollY - wrapperTop
-  const progress  = Math.min(1, Math.max(0, scrollInWrapper / maxScroll))
+  const progress   = Math.min(1, Math.max(0, scrollInWrapper / maxScroll))
   const translateX = progress * window.innerWidth * 2
 
   horizontalTrack.value.style.transform = `translateX(-${translateX}px)`
+
+  // Interpolate background colour across the 3 panels
+  const scaled    = progress * (panelColors.length - 1)
+  const fromIndex = Math.min(Math.floor(scaled), panelColors.length - 2)
+  const t         = scaled - fromIndex
+  const from = panelColors[fromIndex]
+  const to   = panelColors[fromIndex + 1]
+  if (from && to) bgColor.value = lerpColor(from, to, t)
+}
+
+// ── Snap logic ────────────────────────────────────────────────────────────
+let isSnapping = false
+let rafId: number | null = null
+
+const easeInOutCubic = (t: number) =>
+  t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+const animateScrollTo = (targetY: number, duration = 680) => {
+  if (rafId !== null) cancelAnimationFrame(rafId)
+  const startY    = window.scrollY
+  const distance  = targetY - startY
+  const startTime = performance.now()
+
+  const step = (now: number) => {
+    const elapsed  = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    window.scrollTo(0, startY + distance * easeInOutCubic(progress))
+    if (progress < 1) {
+      rafId = requestAnimationFrame(step)
+    } else {
+      rafId      = null
+      isSnapping = false
+    }
+  }
+  rafId = requestAnimationFrame(step)
+}
+
+const getSnapPoints = (): number[] => {
+  const top = stickyWrapper.value?.offsetTop ?? 0
+  const vh  = window.innerHeight
+  return [top, top + vh, top + vh * 2, top + vh * 3]
+}
+
+const snapToNearest = () => {
+  if (isSnapping) return
+  const points  = getSnapPoints()
+  const current = window.scrollY
+  const nearest = points.reduce((prev, curr) =>
+    Math.abs(curr - current) < Math.abs(prev - current) ? curr : prev
+  )
+  if (Math.abs(current - nearest) < 4) return // already at a snap point
+  isSnapping = true
+  animateScrollTo(nearest)
+}
+
+let scrollTimer: ReturnType<typeof setTimeout> | null = null
+
+const onScroll = () => {
+  updateTranslation()
+  // Fallback debounce for browsers without scrollend
+  if (!('onscrollend' in window)) {
+    if (scrollTimer) clearTimeout(scrollTimer)
+    scrollTimer = setTimeout(snapToNearest, 150)
+  }
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', updateTranslation, { passive: true })
+  window.addEventListener('scroll', onScroll, { passive: true })
+  if ('onscrollend' in window) {
+    window.addEventListener('scrollend', snapToNearest)
+  }
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', updateTranslation)
+  window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('scrollend', snapToNearest)
+  if (scrollTimer) clearTimeout(scrollTimer)
+  if (rafId !== null) cancelAnimationFrame(rafId)
 })
 </script>
 
@@ -35,18 +117,18 @@ onUnmounted(() => {
     <!-- ─── Horizontal scroll area ─────────────────────────────────────────── -->
     <!-- 300vh = 100vh visible + 200vh scroll space for panels 2 & 3          -->
     <div ref="stickyWrapper" class="sticky-wrapper">
-      <div class="sticky-container">
+      <div class="sticky-container" :style="{ backgroundColor: bgColor }">
         <div ref="horizontalTrack" class="horizontal-track">
 
-          <section class="panel cherry">
+          <section class="panel">
             <h2 class="panel-title">Cherry</h2>
           </section>
 
-          <section class="panel walnut">
+          <section class="panel">
             <h2 class="panel-title">Walnut</h2>
           </section>
 
-          <section class="panel mint">
+          <section class="panel">
             <h2 class="panel-title">Mint</h2>
           </section>
 
@@ -97,9 +179,6 @@ onUnmounted(() => {
 }
 
 /* ── Pastel colours ──────────────────────────────────────────────────────── */
-.cherry { background-color: #ffb7c5; } /* pastel cherry */
-.walnut { background-color: #dec9a8; } /* pastel walnut */
-.mint   { background-color: #b5ead7; } /* pastel mint   */
 .white  { background-color: #ffffff; } /* white         */
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
