@@ -41,13 +41,15 @@ const updateTranslation = () => {
 }
 
 // ── Snap logic ────────────────────────────────────────────────────────────
-let isSnapping = false
+let isSnapping   = false
 let rafId: number | null = null
+let currentPanel = 0   // index of the snap point we are sitting on
+let touchStartY  = 0
 
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-const animateScrollTo = (targetY: number, duration = 340) => {
+const animateScrollTo = (targetY: number, duration = 220) => {
   if (rafId !== null) cancelAnimationFrame(rafId)
   const startY    = window.scrollY
   const distance  = targetY - startY
@@ -73,34 +75,89 @@ const getSnapPoints = (): number[] => {
   return [top, top + vh, top + vh * 2, top + vh * 3]
 }
 
-const snapToNearest = () => {
-  if (isSnapping) return
-  const points  = getSnapPoints()
-  const current = window.scrollY
-  const nearest = points.reduce((prev, curr) =>
-    Math.abs(curr - current) < Math.abs(prev - current) ? curr : prev
-  )
-  if (Math.abs(current - nearest) < 4) return // already at a snap point
-  isSnapping = true
-  animateScrollTo(nearest)
+// Returns true when the viewport is inside the sticky scroll area
+const isInSnapArea = (): boolean => {
+  const pts = getSnapPoints()
+  return window.scrollY >= (pts[0] ?? 0) && window.scrollY <= (pts[pts.length - 1] ?? 0)
 }
 
-let scrollTimer: ReturnType<typeof setTimeout> | null = null
+const snapToPanel = (index: number) => {
+  const points  = getSnapPoints()
+  const clamped = Math.min(Math.max(index, 0), points.length - 1)
+  currentPanel  = clamped
+  const targetY = points[clamped]
+  if (targetY === undefined || Math.abs(window.scrollY - targetY) < 4) {
+    isSnapping = false
+    return
+  }
+  isSnapping = true
+  animateScrollTo(targetY)
+}
 
-const onScroll = () => {
-  updateTranslation()
+// ── Only used to keep the visual in sync during the JS animation ──────────
+const onScroll = () => updateTranslation()
+
+// ── Wheel (mouse & trackpad) ──────────────────────────────────────────────
+const onWheel = (e: WheelEvent) => {
+  if (!isInSnapArea()) return          // outside wrapper → normal scroll
+  const direction = e.deltaY > 0 ? 1 : -1
+  const nextIndex = currentPanel + direction
+  const points    = getSnapPoints()
+  // At the first or last panel, release control so the page can scroll away
+  if (nextIndex < 0 || nextIndex >= points.length) return
+  // Inside the wrapper: block native scroll and snap exactly one panel
+  e.preventDefault()
   if (isSnapping) return
-  if (scrollTimer) clearTimeout(scrollTimer)
-  scrollTimer = setTimeout(snapToNearest, 80)
+  snapToPanel(nextIndex)
+}
+
+// ── Touch (mobile swipe) ──────────────────────────────────────────────────
+const onTouchStart = (e: TouchEvent) => {
+  touchStartY = e.touches[0]?.clientY ?? 0
+}
+const onTouchMove = (e: TouchEvent) => {
+  if (!isInSnapArea()) return
+  // Determine intended direction so we can release at the boundaries
+  const currentY  = e.touches[0]?.clientY ?? touchStartY
+  const direction = (touchStartY - currentY) > 0 ? 1 : -1
+  const nextIndex = currentPanel + direction
+  const points    = getSnapPoints()
+  // At the boundary, let native scroll carry the user away
+  if (nextIndex < 0 || nextIndex >= points.length) return
+  // Inside the wrapper: block ALL native momentum so we don't overshoot
+  e.preventDefault()
+}
+const onTouchEnd = (e: TouchEvent) => {
+  if (!isInSnapArea() || isSnapping) return
+  const deltaY    = touchStartY - (e.changedTouches[0]?.clientY ?? 0)
+  if (Math.abs(deltaY) < 30) return    // too small – ignore
+  const direction = deltaY > 0 ? 1 : -1
+  const nextIndex = currentPanel + direction
+  const points    = getSnapPoints()
+  if (nextIndex < 0 || nextIndex >= points.length) return
+  snapToPanel(nextIndex)
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', onScroll, { passive: true })
+  // Initialise currentPanel to the nearest snap point
+  const points = getSnapPoints()
+  points.forEach((p, i) => {
+    if (Math.abs(window.scrollY - p) < Math.abs(window.scrollY - (points[currentPanel] ?? 0)))
+      currentPanel = i
+  })
+  window.addEventListener('scroll',     onScroll,     { passive: true  })
+  window.addEventListener('wheel',      onWheel,      { passive: false })
+  window.addEventListener('touchstart', onTouchStart, { passive: true  })
+  window.addEventListener('touchmove',  onTouchMove,  { passive: false })
+  window.addEventListener('touchend',   onTouchEnd,   { passive: true  })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
-  if (scrollTimer) clearTimeout(scrollTimer)
+  window.removeEventListener('scroll',     onScroll)
+  window.removeEventListener('wheel',      onWheel)
+  window.removeEventListener('touchstart', onTouchStart)
+  window.removeEventListener('touchmove',  onTouchMove)
+  window.removeEventListener('touchend',   onTouchEnd)
   if (rafId !== null) cancelAnimationFrame(rafId)
 })
 </script>
