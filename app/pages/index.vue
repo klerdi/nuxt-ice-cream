@@ -47,7 +47,7 @@ let rafId: number | null = null
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-const animateScrollTo = (targetY: number, duration = 680) => {
+const animateScrollTo = (targetY: number, duration = 340) => {
   if (rafId !== null) cancelAnimationFrame(rafId)
   const startY    = window.scrollY
   const distance  = targetY - startY
@@ -89,23 +89,17 @@ let scrollTimer: ReturnType<typeof setTimeout> | null = null
 
 const onScroll = () => {
   updateTranslation()
-  // Fallback debounce for browsers without scrollend
-  if (!('onscrollend' in window)) {
-    if (scrollTimer) clearTimeout(scrollTimer)
-    scrollTimer = setTimeout(snapToNearest, 150)
-  }
+  if (isSnapping) return
+  if (scrollTimer) clearTimeout(scrollTimer)
+  scrollTimer = setTimeout(snapToNearest, 80)
 }
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
-  if ('onscrollend' in window) {
-    window.addEventListener('scrollend', snapToNearest)
-  }
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
-  window.removeEventListener('scrollend', snapToNearest)
   if (scrollTimer) clearTimeout(scrollTimer)
   if (rafId !== null) cancelAnimationFrame(rafId)
 })
