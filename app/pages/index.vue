@@ -192,9 +192,29 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- ─── Section 4 – normal vertical scroll ────────────────────────────── -->
-    <section class="panel white">
-      <h2 class="panel-title">Section 4</h2>
+    <!-- ─── Section 4 – your favourite flavors ──────────────────────────── -->
+    <section class="panel flavors-section">
+      <h2 class="flavors-title">your favorite flavors</h2>
+      <div class="flavors-grid">
+        <div class="flavor-card">
+          <div class="flavor-bubble walnut-bubble">
+            <img src="/images/Walnut.png" alt="Walnut" class="flavor-img" />
+          </div>
+          <span class="flavor-label">walnut</span>
+        </div>
+        <div class="flavor-card">
+          <div class="flavor-bubble mint-bubble">
+            <img src="/images/Mint.png" alt="Mint" class="flavor-img" />
+          </div>
+          <span class="flavor-label">mint</span>
+        </div>
+        <div class="flavor-card">
+          <div class="flavor-bubble cherry-bubble">
+            <img src="/images/Cherry.png" alt="Cherry" class="flavor-img" />
+          </div>
+          <span class="flavor-label">cherry</span>
+        </div>
+      </div>
     </section>
 
   </div>
@@ -251,6 +271,78 @@ img.carouselImg {
 
 /* ── Pastel colours ──────────────────────────────────────────────────────── */
 .white  { background-color: #ffffff; } /* white         */
+
+/* ── Flavors section ─────────────────────────────────────────────────────── */
+.flavors-section {
+  background-color: #f0ebe3;
+  flex-direction: column;
+  gap: 3rem;
+}
+
+.flavors-title {
+  font-size: clamp(1.8rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #3b2a1a;
+  text-align: center;
+  margin: 0;
+}
+
+.flavors-grid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(1.5rem, 5vw, 5rem);
+}
+
+.flavor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.flavor-bubble {
+  width: clamp(140px, 22vw, 260px);
+  height: clamp(140px, 22vw, 260px);
+  border-radius: 50%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  position: relative;
+}
+
+.walnut-bubble { background-color: #f5e6a3; }
+.mint-bubble   { background-color: #5ecfbf; }
+.cherry-bubble { background-color: #dba8c3; }
+
+.flavor-img {
+  width: 90%;
+  max-width: 220px;
+  object-fit: contain;
+  position: absolute;
+  bottom: -10%;
+}
+
+.flavor-label {
+  font-size: clamp(1rem, 2.5vw, 1.6rem);
+  font-weight: 700;
+  color: #3b2a1a;
+  letter-spacing: 0.03em;
+  margin-top: 1.8rem;
+}
+
+@media (max-width: 600px) {
+  .flavors-grid {
+    gap: 1rem;
+  }
+  .flavor-bubble {
+    width: 28vw;
+    height: 28vw;
+  }
+}
 
 /* ── Typography ──────────────────────────────────────────────────────────── */
 .panel-title {
