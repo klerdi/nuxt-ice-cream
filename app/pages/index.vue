@@ -5,6 +5,13 @@ const stickyWrapper   = ref<HTMLElement | null>(null)
 const horizontalTrack = ref<HTMLElement | null>(null)
 const bgColor         = ref('#ffb7c5') // starts at cherry
 
+// ── Mint drop animation ───────────────────────────────────────────────────
+const mintCarouselRef       = ref<HTMLElement | null>(null)  // carousel img in panel 3
+const mintBubbleImgRef      = ref<HTMLElement | null>(null)  // flavor-img in section 4
+const flyingMintVisible     = ref(false)
+const flyingMintStyle       = ref<Record<string, string>>({})
+const mintBubbleImageHidden = ref(false)
+
 // Panel colours as RGB components for easy interpolation
 const panelColors = [
   { r: 255, g: 183, b: 197 }, // cherry  #ffb7c5
@@ -81,9 +88,78 @@ const isInSnapArea = (): boolean => {
   return window.scrollY >= (pts[0] ?? 0) && window.scrollY <= (pts[pts.length - 1] ?? 0)
 }
 
+// ── Mint drop animation ───────────────────────────────────────────────────
+// Fires when the user scrolls from the Mint panel (index 2) to Section 4 (index 3).
+// A fixed-position clone of the mint image flies from its carousel position and
+// shrinks into the mint bubble in section 4, then the real image fades back in.
+const triggerMintDropAnimation = () => {
+  if (!mintCarouselRef.value || !mintBubbleImgRef.value) return
+
+  // Where the mint carousel image sits right now (in viewport space)
+  const startRect  = mintCarouselRef.value.getBoundingClientRect()
+
+  // The scroll will move the page down by exactly one innerHeight (one snap step)
+  const scrollDelta = window.innerHeight
+
+  // Where the mint bubble image will be AFTER the scroll completes
+  const bubbleRect = mintBubbleImgRef.value.getBoundingClientRect()
+  const targetTop  = bubbleRect.top  - scrollDelta
+  const targetLeft = bubbleRect.left
+  const targetW    = bubbleRect.width
+  const targetH    = bubbleRect.height
+
+  // 1 – Teleport the flying clone to the carousel image position (no transition)
+  flyingMintStyle.value = {
+    top:        `${startRect.top}px`,
+    left:       `${startRect.left}px`,
+    width:      `${startRect.width}px`,
+    height:     `${startRect.height}px`,
+    transition: 'none',
+    opacity:    '1',
+  }
+  flyingMintVisible.value     = true
+  mintBubbleImageHidden.value = true
+
+  // 2 – Two rAFs so the browser paints the start state before we add the transition
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      flyingMintStyle.value = {
+        top:        `${targetTop}px`,
+        left:       `${targetLeft}px`,
+        width:      `${targetW}px`,
+        height:     `${targetH}px`,
+        transition: 'top 0.45s ease-in-out, left 0.45s ease-in-out, width 0.45s ease-in-out, height 0.45s ease-in-out',
+        opacity:    '1',
+      }
+
+      // 3 – Once the image has reached its destination, cross-fade into the real one
+      setTimeout(() => {
+        // Fade out the flying clone
+        flyingMintStyle.value = {
+          ...flyingMintStyle.value,
+          transition: 'opacity 0.2s ease',
+          opacity:    '0',
+        }
+        // Simultaneously fade in the real mint bubble image
+        mintBubbleImageHidden.value = false
+
+        setTimeout(() => {
+          flyingMintVisible.value = false
+        }, 220)
+      }, 450)
+    })
+  })
+}
+
 const snapToPanel = (index: number) => {
   const points  = getSnapPoints()
   const clamped = Math.min(Math.max(index, 0), points.length - 1)
+
+  // Trigger the mint-drop animation when going Mint panel → Section 4
+  if (currentPanel === 2 && clamped === 3) {
+    triggerMintDropAnimation()
+  }
+
   currentPanel  = clamped
   const targetY = points[clamped]
   if (targetY === undefined || Math.abs(window.scrollY - targetY) < 4) {
@@ -184,8 +260,7 @@ onUnmounted(() => {
 
           <section class="panel">
             <h2 class="panel-title">Mint</h2>
-            <img class="carouselImg" src="/images/Mint.png" alt=""/>
-
+            <img ref="mintCarouselRef" class="carouselImg" src="/images/Mint.png" alt=""/>
           </section>
 
         </div>
@@ -204,7 +279,13 @@ onUnmounted(() => {
         </div>
         <div class="flavor-card">
           <div class="flavor-bubble mint-bubble">
-            <img src="/images/Mint.png" alt="Mint" class="flavor-img" />
+            <img
+              ref="mintBubbleImgRef"
+              src="/images/Mint.png"
+              alt="Mint"
+              class="flavor-img"
+              :style="{ opacity: mintBubbleImageHidden ? 0 : 1 }"
+            />
           </div>
           <span class="flavor-label">mint</span>
         </div>
@@ -216,6 +297,17 @@ onUnmounted(() => {
         </div>
       </div>
     </section>
+
+    <!-- ─── Flying mint image (drop animation overlay) ──────────────────── -->
+    <Teleport to="body">
+      <img
+        v-if="flyingMintVisible"
+        src="/images/Mint.png"
+        alt=""
+        class="flying-mint-img"
+        :style="flyingMintStyle"
+      />
+    </Teleport>
 
   </div>
 </template>
@@ -276,7 +368,7 @@ img.carouselImg {
 .flavors-section {
   background-color: #f0ebe3;
   flex-direction: column;
-  gap: 3rem;
+  gap: 8rem;
 }
 
 .flavors-title {
@@ -324,6 +416,7 @@ img.carouselImg {
   object-fit: contain;
   position: absolute;
   bottom: -10%;
+  transition: opacity 0.2s ease;
 }
 
 .flavor-label {
@@ -352,6 +445,14 @@ img.carouselImg {
   color: rgba(0, 0, 0, 0.55);
   font-size: 25dvw;
   margin-top: 20rem;
+}
 
+/* ── Flying mint overlay (mint-drop animation) ───────────────────────────── */
+.flying-mint-img {
+  position: fixed;
+  z-index: 9999;
+  object-fit: contain;
+  pointer-events: none;
+  will-change: top, left, width, height, opacity;
 }
 </style>
