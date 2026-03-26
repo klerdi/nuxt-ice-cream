@@ -361,14 +361,15 @@ img.carouselImg {
   gap: 1rem;
 }
 
-/* ── Pastel colours ──────────────────────────────────────────────────────── */
-.white  { background-color: #ffffff; } /* white         */
+
 
 /* ── Flavors section ─────────────────────────────────────────────────────── */
 .flavors-section {
   background-color: #f0ebe3;
   flex-direction: column;
-  gap: 8rem;
+  justify-content: flex-start;
+  padding-top: 16vh;
+  gap: 10rem;
 }
 
 .flavors-title {
@@ -378,6 +379,8 @@ img.carouselImg {
   color: #3b2a1a;
   text-align: center;
   margin: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .flavors-grid {
