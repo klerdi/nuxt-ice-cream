@@ -325,12 +325,12 @@ onUnmounted(() => {
 
 <style scoped>
 .carouselImgSmall1{
-  transform: translate(110%, -100%);
+  transform: translate(11dvw, -27dvh);
   transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: 0.25s;
 }
 .carouselImgSmall1.is-active {
-  transform: translate(60%, -100%);
+  transform: translate(5dvw, -30dvh);
 }
 .carouselImgSmall2{
   transform: translate(-60%, 75%);
@@ -341,8 +341,28 @@ onUnmounted(() => {
   transform: translate(-40%, 75%);
 }
 img.carouselImgSmall{
-  max-width: 17dvw;
+  max-width: 11.5rem;
   position: absolute;
+}
+
+@media (max-width: 1024px) {
+  .carouselImgSmall1{
+    transform: translate(20dvw, -25dvh);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: 0.25s;
+  }
+  .carouselImgSmall1.is-active {
+    transform: translate(11dvw, -27dvh);
+  }
+  img.carouselImgSmall {
+    max-width: 20dvw;
+  }
+}
+
+@media (max-width: 768px) {
+  img.carouselImgSmall {
+    max-width: 35dvw;
+  }
 }
 img.carouselImg {
   max-width: 25rem;
@@ -350,6 +370,14 @@ img.carouselImg {
 }
 
 @media (max-width: 768px) {
+  .carouselImgSmall1{
+    transform: translate(33dvw, -23dvh);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: 0.25s;
+  }
+  .carouselImgSmall1.is-active {
+    transform: translate(20dvw, -25dvh);
+  }
   img.carouselImg {
     max-width: 20rem !important;
   }
