@@ -5,6 +5,9 @@ const stickyWrapper   = ref<HTMLElement | null>(null)
 const horizontalTrack = ref<HTMLElement | null>(null)
 const bgColor         = ref('#ffb7c5') // starts at cherry
 
+// ── Active panel (drives carouselImgSmall1 slide-in animation) ───────────
+const activePanel = ref(-1) // -1 so panel 0 animates in on mount
+
 // ── Mint drop animation ───────────────────────────────────────────────────
 const mintCarouselRef       = ref<HTMLElement | null>(null)  // carousel img in panel 3
 const mintBubbleImgRef      = ref<HTMLElement | null>(null)  // flavor-img in section 4
@@ -160,7 +163,8 @@ const snapToPanel = (index: number) => {
     triggerMintDropAnimation()
   }
 
-  currentPanel  = clamped
+  currentPanel       = clamped
+  activePanel.value  = clamped
   const targetY = points[clamped]
   if (targetY === undefined || Math.abs(window.scrollY - targetY) < 4) {
     isSnapping = false
@@ -221,6 +225,7 @@ onMounted(() => {
     if (Math.abs(window.scrollY - p) < Math.abs(window.scrollY - (points[currentPanel] ?? 0)))
       currentPanel = i
   })
+  setTimeout(() => { activePanel.value = currentPanel }, 80)
   window.addEventListener('scroll',     onScroll,     { passive: true  })
   window.addEventListener('wheel',      onWheel,      { passive: false })
   window.addEventListener('touchstart', onTouchStart, { passive: true  })
@@ -250,17 +255,23 @@ onUnmounted(() => {
           <section class="panel">
             <h2 class="panel-title">Cherry</h2>
             <img class="carouselImg" src="/images/Cherry.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 0 }" src="/images/Cherry1.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 0 }" src="/images/Cherry2.png" alt=""/>
           </section>
 
           <section class="panel">
             <h2 class="panel-title">Walnut</h2>
             <img class="carouselImg" src="/images/Walnut.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 1 }" src="/images/Walnut1.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 1 }" src="/images/Walnut2.png" alt=""/>
 
           </section>
 
           <section class="panel">
             <h2 class="panel-title">Mint</h2>
             <img ref="mintCarouselRef" class="carouselImg" src="/images/Mint.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 2 }" src="/images/Mint1.png" alt=""/>
+            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 2 }" src="/images/Mint2.png" alt=""/>
           </section>
 
         </div>
@@ -313,6 +324,26 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.carouselImgSmall1{
+  transform: translate(110%, -100%);
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0.25s;
+}
+.carouselImgSmall1.is-active {
+  transform: translate(60%, -100%);
+}
+.carouselImgSmall2{
+  transform: translate(-60%, 75%);
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0.35s;
+}
+.carouselImgSmall2.is-active {
+  transform: translate(-40%, 75%);
+}
+img.carouselImgSmall{
+  max-width: 17dvw;
+  position: absolute;
+}
 img.carouselImg {
   max-width: 25rem;
   position: absolute;
