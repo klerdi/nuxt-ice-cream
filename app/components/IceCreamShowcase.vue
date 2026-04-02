@@ -431,7 +431,7 @@ img.carouselImg {
 
 /* ── Shared panel base ───────────────────────────────────────────────────── */
 .panel {
-  width: 100vw;
+  //width: 100vw;
   height: 100vh;
   flex-shrink: 0;
   display: flex;

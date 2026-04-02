@@ -1,7 +1,7 @@
 <template>
   <div>
     <IceCreamShowcase />
-<!--    <FlavorSlider />-->
+    <FlavorSlider />
   </div>
 </template>
 
