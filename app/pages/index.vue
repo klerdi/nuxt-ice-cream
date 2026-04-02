@@ -1,4 +1,7 @@
 <template>
-  <IceCreamShowcase />
+  <div>
+    <IceCreamShowcase />
+    <FlavorSlider />
+  </div>
 </template>
 
