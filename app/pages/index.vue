@@ -55,6 +55,7 @@ let isSnapping   = false
 let rafId: number | null = null
 let currentPanel = 0   // index of the snap point we are sitting on
 let touchStartY  = 0
+let touchStartX  = 0
 
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
@@ -194,14 +195,19 @@ const onWheel = (e: WheelEvent) => {
 // ── Touch (mobile swipe) ──────────────────────────────────────────────────
 const onTouchStart = (e: TouchEvent) => {
   touchStartY = e.touches[0]?.clientY ?? 0
+  touchStartX = e.touches[0]?.clientX ?? 0
 }
 const onTouchMove = (e: TouchEvent) => {
   if (!isInSnapArea()) return
-  // Determine intended direction so we can release at the boundaries
-  const currentY  = e.touches[0]?.clientY ?? touchStartY
-  const direction = (touchStartY - currentY) > 0 ? 1 : -1
-  const nextIndex = currentPanel + direction
-  const points    = getSnapPoints()
+  const currentY   = e.touches[0]?.clientY ?? touchStartY
+  const currentX   = e.touches[0]?.clientX ?? touchStartX
+  const deltaY     = touchStartY - currentY
+  const deltaX     = touchStartX - currentX
+  // In the carousel area (panels 0–2) a horizontal swipe navigates panels too
+  const isHorizontal = currentPanel < 3 && Math.abs(deltaX) > Math.abs(deltaY)
+  const direction  = isHorizontal ? (deltaX > 0 ? 1 : -1) : (deltaY > 0 ? 1 : -1)
+  const nextIndex  = currentPanel + direction
+  const points     = getSnapPoints()
   // At the boundary, let native scroll carry the user away
   if (nextIndex < 0 || nextIndex >= points.length) return
   // Inside the wrapper: block ALL native momentum so we don't overshoot
@@ -209,11 +215,15 @@ const onTouchMove = (e: TouchEvent) => {
 }
 const onTouchEnd = (e: TouchEvent) => {
   if (!isInSnapArea() || isSnapping) return
-  const deltaY    = touchStartY - (e.changedTouches[0]?.clientY ?? 0)
-  if (Math.abs(deltaY) < 30) return    // too small – ignore
-  const direction = deltaY > 0 ? 1 : -1
-  const nextIndex = currentPanel + direction
-  const points    = getSnapPoints()
+  const deltaY       = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
+  const deltaX       = touchStartX - (e.changedTouches[0]?.clientX ?? touchStartX)
+  // In the carousel area use horizontal swipe when it's the dominant axis
+  const isHorizontal = currentPanel < 3 && Math.abs(deltaX) > Math.abs(deltaY)
+  const delta        = isHorizontal ? deltaX : deltaY
+  if (Math.abs(delta) < 30) return    // too small – ignore
+  const direction    = delta > 0 ? 1 : -1
+  const nextIndex    = currentPanel + direction
+  const points       = getSnapPoints()
   if (nextIndex < 0 || nextIndex >= points.length) return
   snapToPanel(nextIndex)
 }
