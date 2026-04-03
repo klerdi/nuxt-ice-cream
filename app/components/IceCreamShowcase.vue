@@ -431,7 +431,7 @@ img.carouselImg {
 
 /* ── Shared panel base ───────────────────────────────────────────────────── */
 .panel {
-  //width: 100vw;
+  width: 98vw;
   height: 100vh;
   flex-shrink: 0;
   display: flex;
@@ -439,6 +439,7 @@ img.carouselImg {
   align-items: center;
   justify-content: center;
   gap: 1rem;
+  margin: auto;
 }
 
 
@@ -526,7 +527,7 @@ img.carouselImg {
   font-weight: 700;
   letter-spacing: 2rem;
   color: rgba(0, 0, 0, 0.55);
-  font-size: 25dvw;
+  font-size: 22dvw;
   margin-top: 20rem;
 }
 
