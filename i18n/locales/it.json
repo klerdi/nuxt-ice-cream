@@ -2,6 +2,18 @@
   "welcome": "Benvenuto",
   "ourStoryDiscover": "Scopri",
   "ourStoryTitle": "La Nostra Storia",
-  "ourStoryDescription": "Nata dall'amore per i gusti cremosi e artigianali, la nostra gelateria serve cucchiaiate di felicità fin dal primo giorno. Selezioniamo i migliori ingredienti — dalle ciliegie maturate al sole alle noci appena tostate — e prepariamo ogni lotto con cura. Che desideriate un cono classico o una nuova creazione audace, ogni morso è fatto per sciogliervi il cuore."
+  "ourStoryDescription": "Nata dall'amore per i gusti cremosi e artigianali, la nostra gelateria serve cucchiaiate di felicità fin dal primo giorno. Selezioniamo i migliori ingredienti — dalle ciliegie maturate al sole alle noci appena tostate — e prepariamo ogni lotto con cura. Che desideriate un cono classico o una nuova creazione audace, ogni morso è fatto per sciogliervi il cuore.",
+  "ingredientsTitle": "I Nostri Ingredienti",
+  "ingredientsDescription": "Ogni pallina inizia con il meglio che la natura ha da offrire. Selezioniamo con cura ingredienti premium di provenienza locale — dalle ciliegie raccolte a mano alla menta selvatica fino alle noci appena sgusciate — per creare gelati belli quanto deliziosi.",
+  "ingredientsImgAlt": "Una vivace esposizione di ingredienti freschi per il gelato",
+  "orderDeliveryTitle": "Ordina & Consegna",
+  "woltTitle": "Wolt",
+  "badgeExternal": "Esterno",
+  "woltMeta": "Ordina il tuo gelato preferito tramite Wolt. Consegna rapida e affidabile direttamente a casa tua.",
+  "woltBtn": "Ordina su Wolt",
+  "iceTitle": "Gelateria",
+  "badgeBestValue": "Miglior Valore",
+  "iceMeta": "Ordina direttamente da noi e goditi offerte esclusive, premi fedeltà e le palline più fresche.",
+  "iceBtn": "Ordina Direttamente"
 }
 

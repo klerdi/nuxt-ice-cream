@@ -2,6 +2,18 @@
   "welcome": "Willkommen",
   "ourStoryDiscover": "Entdecken Sie",
   "ourStoryTitle": "Unsere Geschichte",
-  "ourStoryDescription": "Aus der Liebe zu cremigen, handgefertigten Geschmacksrichtungen geboren, serviert unsere Eisdiele seit dem ersten Tag Kugeln voller Glück. Wir verwenden die besten Zutaten — von sonnengereiften Kirschen bis hin zu frisch gerösteten Walnüssen — und rühren jede Charge mit Sorgfalt. Ob Sie sich nach einer klassischen Waffel oder einer mutigen neuen Kreation sehnen, jeder Bissen ist dazu gemacht, Ihr Herz zum Schmelzen zu bringen."
+  "ourStoryDescription": "Aus der Liebe zu cremigen, handgefertigten Geschmacksrichtungen geboren, serviert unsere Eisdiele seit dem ersten Tag Kugeln voller Glück. Wir verwenden die besten Zutaten — von sonnengereiften Kirschen bis hin zu frisch gerösteten Walnüssen — und rühren jede Charge mit Sorgfalt. Ob Sie sich nach einer klassischen Waffel oder einer mutigen neuen Kreation sehnen, jeder Bissen ist dazu gemacht, Ihr Herz zum Schmelzen zu bringen.",
+  "ingredientsTitle": "Unsere Zutaten",
+  "ingredientsDescription": "Jede Kugel beginnt mit dem Besten, was die Natur zu bieten hat. Wir wählen sorgfältig erstklassige, regional bezogene Zutaten aus — von handgepflückten Kirschen und wilder Minze bis hin zu frisch geknackten Walnüssen — um Eissorten zu kreieren, die so schön wie köstlich sind.",
+  "ingredientsImgAlt": "Eine lebendige Präsentation frischer Eiszutaten",
+  "orderDeliveryTitle": "Bestellen & Liefern",
+  "woltTitle": "Wolt",
+  "badgeExternal": "Extern",
+  "woltMeta": "Bestellen Sie Ihr Lieblingseis über Wolt. Schnelle, zuverlässige Lieferung direkt zu Ihrer Tür.",
+  "woltBtn": "Auf Wolt bestellen",
+  "iceTitle": "Eisdiele",
+  "badgeBestValue": "Bestes Angebot",
+  "iceMeta": "Bestellen Sie direkt bei uns und genießen Sie exklusive Angebote, Treuepunkte und die frischesten Kugeln.",
+  "iceBtn": "Direkt bestellen"
 }
 

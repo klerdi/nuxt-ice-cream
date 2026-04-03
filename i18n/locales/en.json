@@ -2,6 +2,18 @@
   "welcome": "Welcome",
   "ourStoryDiscover": "Discover",
   "ourStoryTitle": "Our Story",
-  "ourStoryDescription": "Born from a love of creamy, handcrafted flavors, our ice cream shop has been serving scoops of happiness since day one. We source the finest ingredients — from sun-ripened cherries to freshly roasted walnuts — and churn every batch with care. Whether you crave a classic cone or a bold new creation, each bite is made to melt your heart."
+  "ourStoryDescription": "Born from a love of creamy, handcrafted flavors, our ice cream shop has been serving scoops of happiness since day one. We source the finest ingredients — from sun-ripened cherries to freshly roasted walnuts — and churn every batch with care. Whether you crave a classic cone or a bold new creation, each bite is made to melt your heart.",
+  "ingredientsTitle": "Our Ingredients",
+  "ingredientsDescription": "Every scoop starts with the best nature has to offer. We carefully select premium, locally sourced ingredients — from hand-picked cherries and wild mint to freshly cracked walnuts — to craft ice creams that are as beautiful as they are delicious.",
+  "ingredientsImgAlt": "A vibrant display of fresh ice cream ingredients",
+  "orderDeliveryTitle": "Order & Delivery",
+  "woltTitle": "Wolt",
+  "badgeExternal": "External",
+  "woltMeta": "Order your favorite ice cream through Wolt. Fast, reliable delivery straight to your door.",
+  "woltBtn": "Order on Wolt",
+  "iceTitle": "Ice Cream Shop",
+  "badgeBestValue": "Best Value",
+  "iceMeta": "Order directly from us and enjoy exclusive deals, loyalty rewards, and the freshest scoops.",
+  "iceBtn": "Order Directly"
 }
 
