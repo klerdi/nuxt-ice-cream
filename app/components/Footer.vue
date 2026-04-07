@@ -81,7 +81,7 @@
         </a>
       </div>
       <p class="text-[11px] tracking-widest uppercase text-[rgba(60,40,20,0.6)]">
-        © Athena Street Food {{ currentYear }}.&nbsp;&nbsp;All Rights Reserved.
+        © Ice Cream {{ currentYear }}.&nbsp;&nbsp;All Rights Reserved.
       </p>
     </div>
   </footer>
