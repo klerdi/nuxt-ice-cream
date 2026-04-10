@@ -1,127 +1,113 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, computed } from 'vue'
 
-const stickyWrapper   = ref<HTMLElement | null>(null)
-const horizontalTrack = ref<HTMLElement | null>(null)
-const bgColor         = ref('#ffb7c5') // starts at cherry
+// ── DOM refs ──────────────────────────────────────────────────────────────
+const sliderSection  = ref<HTMLElement | null>(null)
+const flavorsSection = ref<HTMLElement | null>(null)
 
-// ── Active panel (drives carouselImgSmall1 slide-in animation) ───────────
+// Dynamic refs populated by template function-refs
+const carouselEls = ref<(HTMLElement | null)[]>([])
+const bubbleEls   = ref<(HTMLElement | null)[]>([])
+
+// ── State ─────────────────────────────────────────────────────────────────
 const activePanel = ref(-1) // -1 so panel 0 animates in on mount
+let isAnimating     = false
+let isTransitioning = false
 
-// ── Mint drop animation ───────────────────────────────────────────────────
-const mintCarouselRef       = ref<HTMLElement | null>(null)  // carousel img in panel 3
-const mintBubbleImgRef      = ref<HTMLElement | null>(null)  // flavor-img in section 4
-const flyingMintVisible     = ref(false)
-const flyingMintStyle       = ref<Record<string, string>>({})
-const mintBubbleImageHidden = ref(false)
-
-// Panel colours as RGB components for easy interpolation
-const panelColors = [
-  { r: 255, g: 183, b: 197 }, // cherry  #ffb7c5
-  { r: 222, g: 201, b: 168 }, // walnut  #dec9a8
-  { r: 181, g: 234, b: 215 }, // mint    #b5ead7
+// ── Panel data (single source of truth – add new slides here) ─────────────
+const panels = [
+  { name: 'Cherry', src: '/images/Cherry.png', src1: '/images/Cherry1.png', src2: '/images/Cherry2.png', color: '#ffb7c5', bubbleColor: '#dba8c3' },
+  { name: 'Walnut', src: '/images/Walnut.png', src1: '/images/Walnut1.png', src2: '/images/Walnut2.png', color: '#dec9a8', bubbleColor: '#f5e6a3' },
+  { name: 'Mint',   src: '/images/Mint.png',   src1: '/images/Mint1.png',   src2: '/images/Mint2.png',   color: '#b5ead7', bubbleColor: '#5ecfbf' },
 ]
 
-const lerpColor = (a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }, t: number) => {
-  const r = Math.round(a.r + (b.r - a.r) * t)
-  const g = Math.round(a.g + (b.g - a.g) * t)
-  const bv = Math.round(a.b + (b.b - a.b) * t)
-  return `rgb(${r}, ${g}, ${bv})`
+// ── Background color ──────────────────────────────────────────────────────
+const bgColor = computed(() => panels[Math.max(0, activePanel.value)]?.color ?? panels[0]!.color)
+
+// ── Track transform & width (CSS transition driven) ──────────────────────
+const trackTransform = computed(() => {
+  const idx = Math.max(0, activePanel.value)
+  return `translateX(-${idx * 100}vw)`
+})
+const trackWidth = computed(() => `${panels.length * 100}vw`)
+
+// ── Drop animation state ──────────────────────────────────────────────────
+const flyingVisible     = ref(false)
+const flyingStyle       = ref<Record<string, string>>({})
+const flyingSrc         = ref(panels[0]!.src)
+const hiddenBubbleIndex = ref<number | null>(null)
+
+// ── Function-ref setters (used in template :ref bindings) ─────────────────
+const setCarouselRef = (idx: number) => (el: any) => { carouselEls.value[idx] = el as HTMLElement | null }
+const setBubbleRef   = (idx: number) => (el: any) => { bubbleEls.value[idx]   = el as HTMLElement | null }
+
+// ── Panel navigation ──────────────────────────────────────────────────────
+const goToPanel = (index: number) => {
+  if (index < 0 || index >= panels.length || index === activePanel.value || isAnimating) return
+  isAnimating = true
+  activePanel.value = index
+  setTimeout(() => { isAnimating = false }, 550)
 }
 
-const updateTranslation = () => {
-  if (!stickyWrapper.value || !horizontalTrack.value) return
-
-  const wrapperTop = stickyWrapper.value.offsetTop
-  const maxScroll  = window.innerHeight * 2
-
-  const scrollInWrapper = window.scrollY - wrapperTop
-  const progress   = Math.min(1, Math.max(0, scrollInWrapper / maxScroll))
-  const translateX = progress * window.innerWidth * 2
-
-  horizontalTrack.value.style.transform = `translateX(-${translateX}px)`
-
-  // Interpolate background colour across the 3 panels
-  const scaled    = progress * (panelColors.length - 1)
-  const fromIndex = Math.min(Math.floor(scaled), panelColors.length - 2)
-  const t         = scaled - fromIndex
-  const from = panelColors[fromIndex]
-  const to   = panelColors[fromIndex + 1]
-  if (from && to) bgColor.value = lerpColor(from, to, t)
-}
-
-// ── Snap logic ────────────────────────────────────────────────────────────
-let isSnapping   = false
-let rafId: number | null = null
-let currentPanel = 0   // index of the snap point we are sitting on
-let touchStartY  = 0
-let touchStartX  = 0
-
+// ── Easing ────────────────────────────────────────────────────────────────
 const easeInOutCubic = (t: number) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
-const animateScrollTo = (targetY: number, duration = 220) => {
-  if (rafId !== null) cancelAnimationFrame(rafId)
-  const startY    = window.scrollY
-  const distance  = targetY - startY
-  const startTime = performance.now()
+// ── Smooth scroll (manual for precise timing) ────────────────────────────
+const smoothScrollTo = (targetY: number, duration = 550): Promise<void> => {
+  return new Promise(resolve => {
+    const startY    = window.scrollY
+    const distance  = targetY - startY
+    const startTime = performance.now()
 
-  const step = (now: number) => {
-    const elapsed  = now - startTime
-    const progress = Math.min(elapsed / duration, 1)
-    window.scrollTo(0, startY + distance * easeInOutCubic(progress))
-    if (progress < 1) {
-      rafId = requestAnimationFrame(step)
-    } else {
-      rafId      = null
-      isSnapping = false
+    const step = (now: number) => {
+      const elapsed  = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      window.scrollTo(0, startY + distance * easeInOutCubic(progress))
+      if (progress < 1) requestAnimationFrame(step)
+      else resolve()
     }
+    requestAnimationFrame(step)
+  })
+}
+
+// ── Transition to flavors section (drop animation + scroll) ──────────────
+const transitionToFlavors = async () => {
+  if (isTransitioning || !flavorsSection.value) return
+  isTransitioning = true
+
+  const panelIdx = Math.max(0, activePanel.value)
+  const sourceEl = carouselEls.value[panelIdx]
+  const targetEl = bubbleEls.value[panelIdx]
+
+  if (!sourceEl || !targetEl) {
+    const top = flavorsSection.value.getBoundingClientRect().top + window.scrollY
+    await smoothScrollTo(top)
+    isTransitioning = false
+    return
   }
-  rafId = requestAnimationFrame(step)
-}
 
-const getSnapPoints = (): number[] => {
-  const top = stickyWrapper.value?.offsetTop ?? 0
-  const vh  = window.innerHeight
-  return [top, top + vh, top + vh * 2, top + vh * 3]
-}
+  // Capture positions BEFORE scrolling
+  const startRect  = sourceEl.getBoundingClientRect()
+  const targetRect = targetEl.getBoundingClientRect()
+  const flavorsTop = flavorsSection.value.getBoundingClientRect().top
 
-// Returns true when the viewport is inside the sticky scroll area
-const isInSnapArea = (): boolean => {
-  const pts = getSnapPoints()
-  return window.scrollY >= (pts[0] ?? 0) && window.scrollY <= (pts[pts.length - 1] ?? 0)
-}
+  // After scroll, the target shifts up by `flavorsTop`
+  const targetFinalTop  = targetRect.top  - flavorsTop
+  const targetFinalLeft = targetRect.left
 
-// ── Mint drop animation ───────────────────────────────────────────────────
-// Fires when the user scrolls from the Mint panel (index 2) to Section 4 (index 3).
-// A fixed-position clone of the mint image flies from its carousel position and
-// shrinks into the mint bubble in section 4, then the real image fades back in.
-const triggerMintDropAnimation = async () => {
-  if (!mintCarouselRef.value || !mintBubbleImgRef.value) return
+  flyingSrc.value         = panels[panelIdx]?.src ?? panels[0]!.src
+  hiddenBubbleIndex.value = panelIdx
 
-  // Where the mint carousel image sits right now (in viewport space)
-  const startRect  = mintCarouselRef.value.getBoundingClientRect()
-
-  // The scroll will move the page down by exactly one innerHeight (one snap step)
-  const scrollDelta = window.innerHeight
-
-  // Where the mint bubble image will be AFTER the scroll completes
-  const bubbleRect = mintBubbleImgRef.value.getBoundingClientRect()
-  const targetTop  = bubbleRect.top  - scrollDelta
-  const targetLeft = bubbleRect.left
-  const targetW    = bubbleRect.width
-  const targetH    = bubbleRect.height
-
-  // Base styles applied inline so they are immune to CSS specificity issues
   const base: Record<string, string> = {
-    position:       'fixed',
-    zIndex:         '9999',
-    objectFit:      'contain',
-    pointerEvents:  'none',
+    position:      'fixed',
+    zIndex:        '9999',
+    objectFit:     'contain',
+    pointerEvents: 'none',
   }
 
-  // 1 – Place the flying clone at the carousel image position (no transition)
-  flyingMintStyle.value = {
+  // 1 – Place clone at carousel image position (no transition)
+  flyingStyle.value = {
     ...base,
     top:        `${startRect.top}px`,
     left:       `${startRect.left}px`,
@@ -130,126 +116,118 @@ const triggerMintDropAnimation = async () => {
     transition: 'none',
     opacity:    '1',
   }
-  flyingMintVisible.value     = true
-  mintBubbleImageHidden.value = true
+  flyingVisible.value = true
 
-  // Wait for Vue to flush the DOM so the element is guaranteed to exist
   await nextTick()
 
-  // 2 – Two rAFs so the browser paints the start state before we add the transition
+  // Start the scroll to section 4
+  const scrollTarget = flavorsTop + window.scrollY
+  smoothScrollTo(scrollTarget, 550)
+
+  // 2 – Animate the flying image to its target
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      flyingMintStyle.value = {
+      flyingStyle.value = {
         ...base,
-        top:        `${targetTop}px`,
-        left:       `${targetLeft}px`,
-        width:      `${targetW}px`,
-        height:     `${targetH}px`,
-        transition: 'top 0.45s ease-in-out, left 0.45s ease-in-out, width 0.45s ease-in-out, height 0.45s ease-in-out',
+        top:        `${targetFinalTop}px`,
+        left:       `${targetFinalLeft}px`,
+        width:      `${targetRect.width}px`,
+        height:     `${targetRect.height}px`,
+        transition: 'all 0.55s ease-in-out',
         opacity:    '1',
       }
 
-      // 3 – Once the image has reached its destination, cross-fade into the real one
+      // 3 – Cross-fade into the real bubble image
       setTimeout(() => {
-        // Fade out the flying clone
-        flyingMintStyle.value = {
-          ...flyingMintStyle.value,
+        flyingStyle.value = {
+          ...flyingStyle.value,
           transition: 'opacity 0.2s ease',
           opacity:    '0',
         }
-        // Simultaneously fade in the real mint bubble image
-        mintBubbleImageHidden.value = false
+        hiddenBubbleIndex.value = null
 
         setTimeout(() => {
-          flyingMintVisible.value = false
-        }, 220)
-      }, 450)
+          flyingVisible.value = false
+          isTransitioning = false
+        }, 250)
+      }, 550)
     })
   })
 }
 
-const snapToPanel = (index: number) => {
-  const points  = getSnapPoints()
-  const clamped = Math.min(Math.max(index, 0), points.length - 1)
-
-  // Trigger the mint-drop animation when going Mint panel → Section 4
-  if (currentPanel === 2 && clamped === 3) {
-    triggerMintDropAnimation()
-  }
-
-  currentPanel       = clamped
-  activePanel.value  = clamped
-  const targetY = points[clamped]
-  if (targetY === undefined || Math.abs(window.scrollY - targetY) < 4) {
-    isSnapping = false
-    return
-  }
-  isSnapping = true
-  animateScrollTo(targetY)
+// ── Check if slider is predominantly visible ─────────────────────────────
+const isSliderInView = (): boolean => {
+  if (!sliderSection.value) return false
+  const rect    = sliderSection.value.getBoundingClientRect()
+  const visible = Math.min(rect.bottom, window.innerHeight) - Math.max(rect.top, 0)
+  return visible / window.innerHeight > 0.5
 }
 
-// ── Only used to keep the visual in sync during the JS animation ──────────
-const onScroll = () => updateTranslation()
-
-// ── Wheel (mouse & trackpad) ──────────────────────────────────────────────
+// ── Wheel handler ─────────────────────────────────────────────────────────
 const onWheel = (e: WheelEvent) => {
-  if (!isInSnapArea()) return          // outside wrapper → normal scroll
-  const direction = e.deltaY > 0 ? 1 : -1
-  const nextIndex = currentPanel + direction
-  const points    = getSnapPoints()
-  // At the first or last panel, release control so the page can scroll away
-  if (nextIndex < 0 || nextIndex >= points.length) return
-  // Inside the wrapper: block native scroll and snap exactly one panel
-  e.preventDefault()
-  if (isSnapping) return
-  snapToPanel(nextIndex)
+  if (!isSliderInView() || isTransitioning) return
+
+  const absX = Math.abs(e.deltaX)
+  const absY = Math.abs(e.deltaY)
+
+  if (absX > absY && absX > 3) {
+    // Horizontal → change panel
+    e.preventDefault()
+    if (isAnimating) return
+    goToPanel(activePanel.value + (e.deltaX > 0 ? 1 : -1))
+  } else if (absY > absX && e.deltaY > 0) {
+    // Vertical DOWN → transition to flavors
+    e.preventDefault()
+    transitionToFlavors()
+  }
+  // Vertical UP → don't preventDefault, natural scroll to content above
 }
 
-// ── Touch (mobile swipe) ──────────────────────────────────────────────────
+// ── Touch handlers ────────────────────────────────────────────────────────
+let touchStartX  = 0
+let touchStartY  = 0
+let touchHandled = false
+
 const onTouchStart = (e: TouchEvent) => {
-  touchStartY = e.touches[0]?.clientY ?? 0
-  touchStartX = e.touches[0]?.clientX ?? 0
-}
-const onTouchMove = (e: TouchEvent) => {
-  if (!isInSnapArea()) return
-  const currentY   = e.touches[0]?.clientY ?? touchStartY
-  const currentX   = e.touches[0]?.clientX ?? touchStartX
-  const deltaY     = touchStartY - currentY
-  const deltaX     = touchStartX - currentX
-  // In the carousel area (panels 0–2) a horizontal swipe navigates panels too
-  const isHorizontal = currentPanel < 3 && Math.abs(deltaX) > Math.abs(deltaY)
-  const direction  = isHorizontal ? (deltaX > 0 ? 1 : -1) : (deltaY > 0 ? 1 : -1)
-  const nextIndex  = currentPanel + direction
-  const points     = getSnapPoints()
-  // At the boundary, let native scroll carry the user away
-  if (nextIndex < 0 || nextIndex >= points.length) return
-  // Inside the wrapper: block ALL native momentum so we don't overshoot
-  e.preventDefault()
-}
-const onTouchEnd = (e: TouchEvent) => {
-  if (!isInSnapArea() || isSnapping) return
-  const deltaY       = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
-  const deltaX       = touchStartX - (e.changedTouches[0]?.clientX ?? touchStartX)
-  // In the carousel area use horizontal swipe when it's the dominant axis
-  const isHorizontal = currentPanel < 3 && Math.abs(deltaX) > Math.abs(deltaY)
-  const delta        = isHorizontal ? deltaX : deltaY
-  if (Math.abs(delta) < 30) return    // too small – ignore
-  const direction    = delta > 0 ? 1 : -1
-  const nextIndex    = currentPanel + direction
-  const points       = getSnapPoints()
-  if (nextIndex < 0 || nextIndex >= points.length) return
-  snapToPanel(nextIndex)
+  touchStartX  = e.touches[0]?.clientX ?? 0
+  touchStartY  = e.touches[0]?.clientY ?? 0
+  touchHandled = false
 }
 
+const onTouchMove = (e: TouchEvent) => {
+  if (!isSliderInView() || isTransitioning) return
+
+  const currentX = e.touches[0]?.clientX ?? touchStartX
+  const currentY = e.touches[0]?.clientY ?? touchStartY
+  const deltaX   = touchStartX - currentX
+  const deltaY   = touchStartY - currentY
+
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+    e.preventDefault() // horizontal swipe → prevent native scroll
+  } else if (deltaY > 10) {
+    e.preventDefault() // vertical down → we handle the transition
+  }
+  // vertical up → let native scroll happen
+}
+
+const onTouchEnd = (e: TouchEvent) => {
+  if (!isSliderInView() || isTransitioning || touchHandled) return
+
+  const deltaX = touchStartX - (e.changedTouches[0]?.clientX ?? touchStartX)
+  const deltaY = touchStartY - (e.changedTouches[0]?.clientY ?? touchStartY)
+
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+    touchHandled = true
+    goToPanel(activePanel.value + (deltaX > 0 ? 1 : -1))
+  } else if (deltaY > 30) {
+    touchHandled = true
+    transitionToFlavors()
+  }
+}
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────
 onMounted(() => {
-  // Initialise currentPanel to the nearest snap point
-  const points = getSnapPoints()
-  points.forEach((p, i) => {
-    if (Math.abs(window.scrollY - p) < Math.abs(window.scrollY - (points[currentPanel] ?? 0)))
-      currentPanel = i
-  })
-  setTimeout(() => { activePanel.value = currentPanel }, 80)
-  window.addEventListener('scroll',     onScroll,     { passive: true  })
+  setTimeout(() => { activePanel.value = 0 }, 80)
   window.addEventListener('wheel',      onWheel,      { passive: false })
   window.addEventListener('touchstart', onTouchStart, { passive: true  })
   window.addEventListener('touchmove',  onTouchMove,  { passive: false })
@@ -257,181 +235,102 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll',     onScroll)
   window.removeEventListener('wheel',      onWheel)
   window.removeEventListener('touchstart', onTouchStart)
   window.removeEventListener('touchmove',  onTouchMove)
   window.removeEventListener('touchend',   onTouchEnd)
-  if (rafId !== null) cancelAnimationFrame(rafId)
 })
 </script>
 
 <template>
   <div>
 
-    <!-- ─── Horizontal scroll area ─────────────────────────────────────────── -->
-    <!-- 300vh = 100vh visible + 200vh scroll space for panels 2 & 3          -->
-    <div ref="stickyWrapper" class="sticky-wrapper">
-      <div class="sticky-container" :style="{ backgroundColor: bgColor }">
-        <div ref="horizontalTrack" class="horizontal-track">
+    <!-- ─── Horizontal slider ──────────────────────────────────────────────── -->
+    <div ref="sliderSection" class="slider-section" :style="{ backgroundColor: bgColor }">
+      <div class="horizontal-track" :style="{ transform: trackTransform, width: trackWidth }">
 
-          <section class="panel">
-            <h2 class="panel-title">Cherry</h2>
-            <img class="carouselImg" src="/images/Cherry.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 0 }" src="/images/Cherry1.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 0 }" src="/images/Cherry2.png" alt=""/>
-          </section>
+        <section v-for="(panel, i) in panels" :key="panel.name" class="panel">
+          <h2 class="panel-title">{{ panel.name }}</h2>
+          <img :ref="setCarouselRef(i)" class="carouselImg" :src="panel.src" alt="" />
+          <img
+            class="carouselImgSmall carouselImgSmall1"
+            :class="{ 'is-active': activePanel === i }"
+            :src="panel.src1"
+            alt=""
+          />
+          <img
+            class="carouselImgSmall carouselImgSmall2"
+            :class="{ 'is-active': activePanel === i }"
+            :src="panel.src2"
+            alt=""
+          />
+        </section>
 
-          <section class="panel">
-            <h2 class="panel-title">Walnut</h2>
-            <img class="carouselImg" src="/images/Walnut.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 1 }" src="/images/Walnut1.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 1 }" src="/images/Walnut2.png" alt=""/>
+      </div>
 
-          </section>
-
-          <section class="panel">
-            <h2 class="panel-title">Mint</h2>
-            <img ref="mintCarouselRef" class="carouselImg" src="/images/Mint.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall1" :class="{ 'is-active': activePanel === 2 }" src="/images/Mint1.png" alt=""/>
-            <img class="carouselImgSmall carouselImgSmall2" :class="{ 'is-active': activePanel === 2 }" src="/images/Mint2.png" alt=""/>
-          </section>
-
-        </div>
+      <!-- Navigation dots -->
+      <div class="slider-dots">
+        <button
+          v-for="(p, i) in panels"
+          :key="p.name"
+          class="dot"
+          :class="{ active: activePanel === i }"
+          :aria-label="`Go to ${p.name}`"
+          @click="goToPanel(i)"
+        />
       </div>
     </div>
 
-    <!-- ─── Section 4 – your favourite flavors ──────────────────────────── -->
-    <section class="panel flavors-section">
+    <!-- ─── Flavors section ────────────────────────────────────────────────── -->
+    <section ref="flavorsSection" class="panel flavors-section">
       <h2 class="flavors-title">your favorite flavors</h2>
       <div class="flavors-grid">
-        <div class="flavor-card">
-          <div class="flavor-bubble walnut-bubble">
-            <img src="/images/Walnut.png" alt="Walnut" class="flavor-img" />
-          </div>
-          <span class="flavor-label">walnut</span>
-        </div>
-        <div class="flavor-card">
-          <div class="flavor-bubble mint-bubble">
+        <div v-for="(panel, i) in panels" :key="panel.name" class="flavor-card">
+          <div class="flavor-bubble" :style="{ backgroundColor: panel.bubbleColor }">
             <img
-              ref="mintBubbleImgRef"
-              src="/images/Mint.png"
-              alt="Mint"
+              :ref="setBubbleRef(i)"
+              :src="panel.src"
+              :alt="panel.name"
               class="flavor-img"
-              :style="{ opacity: mintBubbleImageHidden ? 0 : 1 }"
+              :style="{ opacity: hiddenBubbleIndex === i ? 0 : 1 }"
             />
           </div>
-          <span class="flavor-label">mint</span>
-        </div>
-        <div class="flavor-card">
-          <div class="flavor-bubble cherry-bubble">
-            <img src="/images/Cherry.png" alt="Cherry" class="flavor-img" />
-          </div>
-          <span class="flavor-label">cherry</span>
+          <span class="flavor-label">{{ panel.name.toLowerCase() }}</span>
         </div>
       </div>
     </section>
 
-    <!-- ─── Flying mint image (drop animation overlay) ──────────────────── -->
+    <!-- ─── Flying image (drop animation overlay) ──────────────────────── -->
     <img
-      v-show="flyingMintVisible"
-      src="/images/Mint.png"
+      v-show="flyingVisible"
+      :src="flyingSrc"
       alt=""
-      class="flying-mint-img"
-      :style="flyingMintStyle"
+      class="flying-img"
+      :style="flyingStyle"
     />
 
   </div>
 </template>
 
 <style scoped>
-.carouselImgSmall1{
-  transform: translate(11dvw, -27dvh);
-  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: 0.25s;
-}
-.carouselImgSmall1.is-active {
-  transform: translate(5dvw, -30dvh);
-}
-.carouselImgSmall2{
-  transform: translate(-60%, 75%);
-  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: 0.35s;
-}
-.carouselImgSmall2.is-active {
-  transform: translate(-40%, 75%);
-}
-img.carouselImgSmall{
-  max-width: 11.5rem;
-  position: absolute;
-}
-
-@media (max-width: 1024px) {
-  .carouselImgSmall1{
-    transform: translate(20dvw, -25dvh);
-    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: 0.25s;
-  }
-  .carouselImgSmall1.is-active {
-    transform: translate(11dvw, -27dvh);
-  }
-  img.carouselImgSmall {
-    max-width: 20dvw;
-  }
-}
-
-@media (max-width: 768px) {
-  img.carouselImgSmall {
-    max-width: 35dvw;
-  }
-}
-img.carouselImg {
-  max-width: 25rem;
-  position: absolute;
-}
-
-@media (max-width: 768px) {
-  .carouselImgSmall1{
-    transform: translate(33dvw, -23dvh);
-    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
-    transition-delay: 0.25s;
-  }
-  .carouselImgSmall1.is-active {
-    transform: translate(20dvw, -25dvh);
-  }
-  img.carouselImg {
-    max-width: 20rem !important;
-  }
-  .panel-title {
-    margin-top: 36rem;
-    letter-spacing: 0.05em !important;
-
-  }
-}
-/* ── Horizontal scroll mechanics ────────────────────────────────────────── */
-.sticky-wrapper {
-  height: 300vh;       /* provides 200vh of scroll range beyond the 100vh panel */
+/* ── Slider section ──────────────────────────────────────────────────────── */
+.slider-section {
   position: relative;
-}
-
-.sticky-container {
-  position: sticky;
-  top: 0;
   height: 100vh;
   overflow: hidden;
+  transition: background-color 0.5s ease;
 }
 
 .horizontal-track {
   display: flex;
-  width: 300vw;        /* 3 panels × 100vw */
   height: 100%;
   will-change: transform;
-  transition: transform 0.12s ease-out; /* subtle smoothing */
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* ── Shared panel base ───────────────────────────────────────────────────── */
 .panel {
-  width: 98vw;
+  width: 100vw;
   height: 100vh;
   flex-shrink: 0;
   display: flex;
@@ -439,10 +338,77 @@ img.carouselImg {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  margin: auto;
+  position: relative;
 }
 
+/* ── Carousel images ─────────────────────────────────────────────────────── */
+img.carouselImg {
+  max-width: 25rem;
+  position: absolute;
+}
 
+.carouselImgSmall1 {
+  transform: translate(11dvw, -27dvh);
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0.25s;
+}
+.carouselImgSmall1.is-active {
+  transform: translate(5dvw, -30dvh);
+}
+
+.carouselImgSmall2 {
+  transform: translate(-60%, 75%);
+  transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: 0.35s;
+}
+.carouselImgSmall2.is-active {
+  transform: translate(-40%, 75%);
+}
+
+img.carouselImgSmall {
+  max-width: 11.5rem;
+  position: absolute;
+}
+
+/* ── Navigation dots ─────────────────────────────────────────────────────── */
+.slider-dots {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.75rem;
+  z-index: 10;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dot.active {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 0, 0, 0.5);
+}
+
+.dot:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+.panel-title {
+  font-weight: 700;
+  letter-spacing: 2rem;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 22dvw;
+  margin-top: 20rem;
+}
 
 /* ── Flavors section ─────────────────────────────────────────────────────── */
 .flavors-section {
@@ -490,9 +456,6 @@ img.carouselImg {
   position: relative;
 }
 
-.walnut-bubble { background-color: #f5e6a3; }
-.mint-bubble   { background-color: #5ecfbf; }
-.cherry-bubble { background-color: #dba8c3; }
 
 .flavor-img {
   width: 90%;
@@ -511,6 +474,51 @@ img.carouselImg {
   margin-top: 1.8rem;
 }
 
+/* ── Flying image overlay (drop animation) ───────────────────────────────── */
+.flying-img {
+  position: fixed;
+  z-index: 9999;
+  object-fit: contain;
+  pointer-events: none;
+  will-change: top, left, width, height, opacity;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .carouselImgSmall1 {
+    transform: translate(20dvw, -25dvh);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: 0.25s;
+  }
+  .carouselImgSmall1.is-active {
+    transform: translate(11dvw, -27dvh);
+  }
+  img.carouselImgSmall {
+    max-width: 20dvw;
+  }
+}
+
+@media (max-width: 768px) {
+  img.carouselImgSmall {
+    max-width: 35dvw;
+  }
+  .carouselImgSmall1 {
+    transform: translate(33dvw, -23dvh);
+    transition: transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: 0.25s;
+  }
+  .carouselImgSmall1.is-active {
+    transform: translate(20dvw, -25dvh);
+  }
+  img.carouselImg {
+    max-width: 20rem !important;
+  }
+  .panel-title {
+    margin-top: 36rem;
+    letter-spacing: 0.05em !important;
+  }
+}
+
 @media (max-width: 600px) {
   .flavors-grid {
     gap: 1rem;
@@ -519,25 +527,6 @@ img.carouselImg {
     width: 28vw;
     height: 28vw;
   }
-}
-
-/* ── Typography ──────────────────────────────────────────────────────────── */
-.panel-title {
-  //font-size: clamp(2rem, 6vw, 4rem);
-  font-weight: 700;
-  letter-spacing: 2rem;
-  color: rgba(0, 0, 0, 0.55);
-  font-size: 22dvw;
-  margin-top: 20rem;
-}
-
-/* ── Flying mint overlay (drop animation) ────────────────────────────────── */
-.flying-mint-img {
-  position: fixed;
-  z-index: 9999;
-  object-fit: contain;
-  pointer-events: none;
-  will-change: top, left, width, height, opacity;
 }
 </style>
 
