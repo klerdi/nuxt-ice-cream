@@ -225,20 +225,76 @@ const onTouchEnd = (e: TouchEvent) => {
   }
 }
 
+// ── Mouse / pointer drag handlers (PC click-and-drag) ────────────────────
+let pointerDown    = false
+let pointerStartX  = 0
+let pointerStartY  = 0
+let pointerHandled = false
+
+const onPointerDown = (e: PointerEvent) => {
+  // Only handle primary button (left click), ignore touch (handled separately)
+  if (e.pointerType === 'touch' || e.button !== 0) return
+  if (!isSliderInView() || isTransitioning) return
+  pointerDown    = true
+  pointerStartX  = e.clientX
+  pointerStartY  = e.clientY
+  pointerHandled = false
+}
+
+const onPointerMove = (e: PointerEvent) => {
+  if (!pointerDown || pointerHandled || isTransitioning) return
+  const deltaX = pointerStartX - e.clientX
+
+  // Prevent text selection while dragging horizontally
+  if (Math.abs(deltaX) > 10) {
+    e.preventDefault()
+  }
+}
+
+const onPointerUp = (e: PointerEvent) => {
+  if (!pointerDown || pointerHandled || isTransitioning) return
+  pointerDown = false
+
+  if (!isSliderInView()) return
+
+  const deltaX = pointerStartX - e.clientX
+  const deltaY = pointerStartY - e.clientY
+
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+    pointerHandled = true
+    goToPanel(activePanel.value + (deltaX > 0 ? 1 : -1))
+  } else if (deltaY > 30) {
+    pointerHandled = true
+    transitionToFlavors()
+  }
+}
+
+const onPointerCancel = () => {
+  pointerDown = false
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────
 onMounted(() => {
   setTimeout(() => { activePanel.value = 0 }, 80)
-  window.addEventListener('wheel',      onWheel,      { passive: false })
-  window.addEventListener('touchstart', onTouchStart, { passive: true  })
-  window.addEventListener('touchmove',  onTouchMove,  { passive: false })
-  window.addEventListener('touchend',   onTouchEnd,   { passive: true  })
+  window.addEventListener('wheel',         onWheel,         { passive: false })
+  window.addEventListener('touchstart',    onTouchStart,    { passive: true  })
+  window.addEventListener('touchmove',     onTouchMove,     { passive: false })
+  window.addEventListener('touchend',      onTouchEnd,      { passive: true  })
+  window.addEventListener('pointerdown',   onPointerDown,   { passive: true  })
+  window.addEventListener('pointermove',   onPointerMove,   { passive: false })
+  window.addEventListener('pointerup',     onPointerUp,     { passive: true  })
+  window.addEventListener('pointercancel', onPointerCancel, { passive: true  })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('wheel',      onWheel)
-  window.removeEventListener('touchstart', onTouchStart)
-  window.removeEventListener('touchmove',  onTouchMove)
-  window.removeEventListener('touchend',   onTouchEnd)
+  window.removeEventListener('wheel',         onWheel)
+  window.removeEventListener('touchstart',    onTouchStart)
+  window.removeEventListener('touchmove',     onTouchMove)
+  window.removeEventListener('touchend',      onTouchEnd)
+  window.removeEventListener('pointerdown',   onPointerDown)
+  window.removeEventListener('pointermove',   onPointerMove)
+  window.removeEventListener('pointerup',     onPointerUp)
+  window.removeEventListener('pointercancel', onPointerCancel)
 })
 </script>
 
@@ -319,6 +375,13 @@ onUnmounted(() => {
   height: 100vh;
   overflow: hidden;
   transition: background-color 0.5s ease;
+  user-select: none;         /* prevent text selection during drag */
+  -webkit-user-select: none;
+}
+
+.slider-section img {
+  -webkit-user-drag: none;   /* prevent native image ghost drag */
+  pointer-events: none;      /* let drag events pass through to the section */
 }
 
 .horizontal-track {

@@ -160,7 +160,7 @@ const defaultReviews: Review[] = [
     name: "Maria Kola",
     initials: "MK",
     date: "2 weeks ago",
-    text: "Best Greek food in Tirana! The chicken souvlaki is absolutely delicious, and the portions are generous. Service is always fast and friendly. Highly recommend!",
+    text: "Best ice cream in town! The pistachio flavor is out of this world, and the waffle cones are freshly made. Creamy, rich, and absolutely divine. Highly recommend!",
     rating: 5
   },
   {
@@ -168,7 +168,7 @@ const defaultReviews: Review[] = [
     name: "Arben Hoxha",
     initials: "AH",
     date: "1 month ago",
-    text: "Authentic Greek taste! The gyros reminds me of my trips to Athens. Fresh ingredients, great prices, and the delivery is super quick. My go-to place for Greek street food.",
+    text: "Authentic Italian-style gelato! The stracciatella reminds me of my trips to Rome. Fresh ingredients, amazing texture, and so many unique flavors. My go-to ice cream spot.",
     rating: 5
   },
   {
@@ -176,7 +176,7 @@ const defaultReviews: Review[] = [
     name: "Elona Shehu",
     initials: "ES",
     date: "3 weeks ago",
-    text: "Amazing food and atmosphere! The pork wrap is my favorite. Everything is freshly made and you can taste the quality. The staff is very welcoming. Will definitely come back!",
+    text: "Amazing flavors and cozy atmosphere! The salted caramel is my absolute favorite. Everything is made fresh daily and you can taste the quality. Will definitely come back!",
     rating: 5
   },
   {
@@ -184,7 +184,7 @@ const defaultReviews: Review[] = [
     name: "Denis Mata",
     initials: "DM",
     date: "1 week ago",
-    text: "Fantastic experience! Ordered through WhatsApp and the food arrived hot and fresh. The Greek fries with feta are a must-try. Best street food in town, hands down!",
+    text: "Fantastic ice cream! The mint chocolate chip is perfectly balanced — refreshing and indulgent at the same time. The toppings bar is a must-try. Best dessert spot, hands down!",
     rating: 5
   },
   {
@@ -192,7 +192,7 @@ const defaultReviews: Review[] = [
     name: "Ina Berisha",
     initials: "IB",
     date: "2 months ago",
-    text: "Love this place! The souvlaki plate is huge and perfect for sharing. Great value for money and the tzatziki sauce is absolutely perfect. Highly recommended!",
+    text: "Love this place! The sundae with fresh berries and whipped cream is heavenly. Great value for money and the homemade waffle bowls are absolutely perfect. Highly recommended!",
     rating: 5
   },
   {
@@ -200,7 +200,7 @@ const defaultReviews: Review[] = [
     name: "Kledi Rama",
     initials: "KR",
     date: "3 weeks ago",
-    text: "Top quality Greek street food! Fresh ingredients, generous portions, and amazing taste. The delivery service is reliable and fast. My whole family loves it!",
+    text: "Top quality ice cream! All-natural ingredients, generous scoops, and incredible flavor variety. The kids love the cookie dough and I can't get enough of the dark chocolate. A family favorite!",
     rating: 5
   }
 ];
