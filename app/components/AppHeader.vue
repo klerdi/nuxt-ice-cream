@@ -65,6 +65,7 @@
           <circle cx="12" cy="7" r="4" />
         </svg>
       </button>
+      <LanguageSwitcher/>
     </div>
   </header>
 </template>
