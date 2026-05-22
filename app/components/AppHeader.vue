@@ -1,5 +1,6 @@
 <template>
   <header class="app-header">
+    <div class="logo-nav">
     <!-- Logo -->
     <div class="logo">
       <!--
@@ -36,7 +37,6 @@
         <line stroke-width="1" opacity="0.6" x1="27" y1="38" x2="20" y2="60"/>
       </svg>
     </div>
-
     <!-- Navigation -->
     <nav class="nav">
       <nuxt-link href="#" class="nav-link">FLAVOURS</nuxt-link>
@@ -45,6 +45,7 @@
       <nuxt-link href="#" class="nav-link">SUSTAINABILITY</nuxt-link>
       <nuxt-link href="#" class="nav-link">CONTACT</nuxt-link>
     </nav>
+    </div>
 
     <!-- Actions -->
     <div class="actions">
@@ -84,6 +85,12 @@
   background: transparent;
 }
 
+.logo-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -101,8 +108,6 @@
   display: flex;
   align-items: center;
   gap: 2.2rem;
-  flex: 1;
-  justify-content: center;
 }
 
 .nav-link {

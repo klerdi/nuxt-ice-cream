@@ -4,7 +4,7 @@
 
       <!-- Text Header -->
       <div class="ingredients-header">
-        <p class="ingredients-subtitle" :class="{ 'animate-in': isVisible }">{{ $t('ourStoryDiscover') }}</p>
+<!--        <p class="ingredients-subtitle" :class="{ 'animate-in': isVisible }">{{ $t('ourStoryDiscover') }}</p>-->
         <h2 class="ingredients-title" :class="{ 'animate-in': isVisible }">{{ $t('ingredientsTitle') }}</h2>
         <p class="ingredients-description" :class="{ 'animate-in': isVisible }">
           {{ $t('ingredientsDescription') }}

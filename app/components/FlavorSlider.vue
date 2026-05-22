@@ -255,11 +255,11 @@ onUnmounted(() => {
               v-for="(flavor, idx) in slides"
               :key="`slide-${idx}`"
               :style="slideStyle"
-              class="flex-shrink-0 px-2 md:px-4"
+              class="flex-shrink-0 px-2 md:px-4 flex"
             >
               <!-- Card -->
               <div
-                class="flavor-card relative rounded-[2rem] overflow-hidden flex flex-col select-none"
+                class="flavor-card relative rounded-[2rem] overflow-hidden flex flex-col select-none w-full h-full"
                 :style="{ backgroundColor: flavor.bgColor }"
               >
                 <!-- Brand -->
@@ -284,7 +284,7 @@ onUnmounted(() => {
                   <h3 class="text-2xl md:text-3xl font-extrabold text-gray-900 leading-tight whitespace-pre-line">
                     {{ flavor.title }}
                   </h3>
-                  <p class="mt-2 text-sm md:text-base text-gray-700/80 leading-relaxed max-w-[220px]">
+                  <p class="mt-2 text-sm md:text-base text-gray-700/80 leading-relaxed /">
                     {{ flavor.description }}
                   </p>
                 </div>

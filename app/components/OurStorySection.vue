@@ -5,7 +5,7 @@
       <!-- Right side - Content -->
       <div class="story-content" ref="contentRef">
         <div class="content-inner">
-          <h3 class="story-subtitle" :class="{ 'animate-in': isVisible }">{{ $t('ourStoryDiscover') }}</h3>
+<!--          <h3 class="story-subtitle" :class="{ 'animate-in': isVisible }">{{ $t('ourStoryDiscover') }}</h3>-->
           <h2 class="story-title" :class="{ 'animate-in': isVisible }">{{ $t('ourStoryTitle') }}</h2>
           <p class="story-description" :class="{ 'animate-in': isVisible }">
             {{ $t('ourStoryDescription') }}

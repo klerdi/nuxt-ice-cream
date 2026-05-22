@@ -299,7 +299,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div>
+  <div style="overflow-x: hidden">
 
     <!-- ─── Horizontal slider ──────────────────────────────────────────────── -->
     <div ref="sliderSection" class="slider-section" :style="{ backgroundColor: bgColor }">
@@ -480,6 +480,9 @@ img.carouselImgSmall {
   justify-content: flex-start;
   padding-top: 16vh;
   gap: 10rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .flavors-title {
